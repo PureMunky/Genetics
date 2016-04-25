@@ -5,7 +5,9 @@
     currentFitness2 = 0,
     currentGeneration = 0,
     foundinXGenerations = 0,
-    solutionSize = 40,
+    maxSolutionSize = 40,
+    currentSolutionSize = 2,
+    solutionSizeGrowth = 2,
     populationSizeMax = 1000,
     mutationRate = 1,
     maxGenerations = 1000,
@@ -33,10 +35,10 @@ function mate(in1, in2) {
     var offspring = [];
     var bitValue = 0;
 
-    for (i = 0; i < solutionSize; i++) {
+    for (i = 0; i < currentSolutionSize; i++) {
         bitValue = 0;
 
-        if (i < (solutionSize / 2)) {
+        if (i < (currentSolutionSize / 2)) {
             bitValue = in1[i];
         } else {
             bitValue = in2[i];
@@ -168,7 +170,7 @@ function createRandomSolution() {
     var i = 0,
         solution = [];
 
-    for (i = 0; i < solutionSize; i++) {
+    for (i = 0; i < currentSolutionSize; i++) {
         solution[i] = (Math.floor((Math.random() * 100) % 2));
     }
 
@@ -184,7 +186,7 @@ function run() {
     generateInitialPopulation();
     findNewParents();
     //createInitialParents();
-    for (i = 0; i < maxGenerations; i++) {
+    for (i = 0; i < maxGenerations && currentSolutionSize <= maxSolutionSize; i++) {
         var currentTime = new Date();
 
         if ((currentTime - lastReport) > reportDuration && reportFunction) {
@@ -198,6 +200,14 @@ function run() {
             currentGeneration++;
             generatePopulation();
             findNewParents();
+
+            if (i >= maxGenerations - 1) {
+                currentSolutionSize += solutionSizeGrowth;
+                i = 0;
+
+                generateInitialPopulation();
+                findNewParents();
+            }
         }
     }
 
@@ -209,7 +219,9 @@ function run() {
 function init(config) {
     findFitness = config.fitness;
     interpretSolution = config.interpret;
-    solutionSize = config.solutionSize || 40;
+    maxSolutionSize = config.maxSolutionSize || 40;
+    currentSolutionSize = config.minSolutionSize || 2;
+    solutionSizeGrowth = config.solutionGrowth || 2;
     populationSizeMax = config.populationMax || 100;
     mutationRate = config.mutationRate || 1;
     maxGenerations = config.maxGenerations || 100;
@@ -222,10 +234,12 @@ function init(config) {
 function getStats() {
     return {
         best: interpretSolution(currentSolution1),
+        bestArr: currentSolution1,
         fitness: currentFitness1,
         generations: foundinXGenerations,
         time: (end - start),
-        found: foundSolution
+        found: foundSolution,
+        size: currentSolutionSize
     };
 }
 

@@ -1,6 +1,6 @@
 ﻿var gen = require('./genetics.js');
 
-var paramCount = 2;
+var paramCount = 3;
 
 function findFitness(solution) {
 
@@ -8,10 +8,10 @@ function findFitness(solution) {
 
     var cntCorrect = 0;
 
-    if (testFunc(2, 2) == 4) { cntCorrect++; }
-    if (testFunc(3, 2) == 5) { cntCorrect++; }
-    if (testFunc(5, 7) == 12) { cntCorrect++; }
-    if (testFunc(4, 3) == 7) { cntCorrect++; }
+    if (testFunc(2, 2, 2) == 8) { cntCorrect++; }
+    if (testFunc(3, 2, 1) == 6) { cntCorrect++; }
+    if (testFunc(5, 7, 2) == 70) { cntCorrect++; }
+    if (testFunc(4, 3, 5) == 60) { cntCorrect++; }
 
     return cntCorrect / 4.0;
 }
@@ -151,8 +151,9 @@ gen.initialize({
     report: function (stats) {
         console.log(stats);
     },
-    solutionSize: 50,
-    maxGenerations: 10000
+    maxSolutionSize: 30,
+    maxGenerations: 1000,
+    solutionGrowth: 4
 });
 
 console.log(gen.stats());

@@ -20,7 +20,8 @@ function interpret(solution) {
 gen.initialize({
     fitness: findFitness,
     interpret: interpret,
-    solutionSize: 30,
+    maxSolutionSize: 300,
+    minSolutionSize: 10,
     maxGenerations: 1000
 });
 
