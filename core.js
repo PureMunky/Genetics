@@ -78,6 +78,8 @@ var Genetics = (function (utils) {
         currentFitness1 = 0,
         currentSolution2 = [],
         currentFitness2 = 0,
+        bestSolution = [],
+        bestFitness = 0,
         currentGeneration = 0,
         foundinXGenerations = 0,
         solutionSize = 40,
@@ -104,11 +106,15 @@ var Genetics = (function (utils) {
         var i = 0;
         var offspring = [];
         var bitValue = 0;
-
+        var split = Math.round((Math.random() * 1000) % solutionSize);
+        
+        // EXAMPLE: Not randomizing the split.
+        //split = (solutionSize / 2);
+        
         for (i = 0; i < solutionSize; i++) {
             bitValue = 0;
 
-            if (i < (solutionSize / 2)) {
+            if (i < split) {
                 bitValue = in1[i];
             } else {
                 bitValue = in2[i];
@@ -152,8 +158,10 @@ var Genetics = (function (utils) {
                 currInd2 = currentIndividuals[i];
             }
 
-            if (testFit.value > currentFitness1) {
+            if (testFit.value > bestFitness) {
                 foundinXGenerations = currentGeneration;
+                bestFitness = testFit.value;
+                bestSolution = currentIndividuals[i];
             }
 
             if (testFit.perfect) {
@@ -209,23 +217,23 @@ var Genetics = (function (utils) {
 
         end = new Date();
         document.write('Solution: ');
-        var sol = interpretSolution(currentSolution1);
+        var sol = interpretSolution(bestSolution);
         if (sol.english) {
             document.write(sol.english);
         } else {
             document.write(sol);
         }
         document.write('<br/>');
-        document.write('Array: ' + currentSolution1);
+        document.write('Array: ' + bestSolution);
         document.write('<br/>');
-        document.write('Fitness: ' + currentFitness1);
+        document.write('Fitness: ' + bestFitness);
         document.write('<br/>');
         document.write('Found in ' + foundinXGenerations + ' Generations');
         document.write('<br/>');
         document.write((end - start) + ' milliseconds');
         document.write('</pre>');
 
-        return currentSolution1;
+        return bestSolution;
     }
 
     // Resets all values back to default and sets passed configuration.
@@ -236,6 +244,8 @@ var Genetics = (function (utils) {
         currentSolution2 = [];
         currentFitness2 = 0;
         currentGeneration = 0;
+        bestSolution = [];
+        bestFitness = 0;
         foundinXGenerations = 0;
         solutionSize = 40;
         populationSizeMax = 1000;
@@ -345,10 +355,45 @@ var Knapsack = (function (gen, utils) {
         name: 'bug net',
         weight: 10,
         priority: 1
+    },
+    {
+        name: 'tent',
+        weight: 15,
+        priority: 10
+    },
+    {
+        name: 'air matress',
+        weight: 5,
+        priority: 100
+    },
+    {
+        name: 'blanket',
+        weight: 10,
+        priority: 4
+    },
+    {
+        name: 'water',
+        weight: 30,
+        priority: 100
+    },
+    {
+        name: 'bug spray',
+        weight: 5,
+        priority: 1
+    },
+    {
+        name: 'wood',
+        weight: 30,
+        priority: 15
+    },
+    {
+        name: 'food',
+        weight: 10,
+        priority: 100
     }];
 
     // weight limit
-    var maxWeight = 50;
+    var maxWeight = 100;
 
     // Determine the total weight of the solution.
     // If the weight is greater than max then sort.
