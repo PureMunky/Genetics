@@ -14,7 +14,7 @@ var Utilities = (function () {
     }
 
     // Converts a bitArray into a decimal number.
-    // example: 10 becomes 1010
+    // example: [1,0,1,0] becomes 10
     function toDecimal(bitArray) {
         var rtn = 0,
             i = 0;
