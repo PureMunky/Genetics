@@ -420,15 +420,20 @@ var Knapsack = (function (gen, utils) {
     // an english description of the items
     function interpret(solution) {
         var backpackItems = [];
+        var leftItems = [];
+        var possibleWeight = 0;
         var totalWeight = 0;
         var totalPriority = 0;
         var i = 0;
         for (i = 0; i < solution.length; i++) {
+            possibleWeight += items[i].weight;
             if (solution[i] == 1) {
                 totalWeight += items[i].weight;
                 totalPriority += items[i].priority;
 
                 backpackItems.push(items[i].name);
+            } else {
+                leftItems.push(items[i].name);
             }
         }
 
@@ -436,7 +441,10 @@ var Knapsack = (function (gen, utils) {
             totalWeight: totalWeight,
             totalPriority: totalPriority,
             backpack: backpackItems,
-            english: 'weight: ' + totalWeight + ': ' + backpackItems.join(',')
+            english: 'weight: '
+                + totalWeight + '/' + possibleWeight
+                + '<br/> Backpack: ' + backpackItems.join(',')
+                + '<br/> Left Items: ' + leftItems.join(',')
         };
     }
 
@@ -615,7 +623,7 @@ var Generator = (function (gen, utils) {
     var config = {
         fitness: findFitness,
         interpret: interpretSolution,
-        solutionSize: 40,
+        solutionSize: 25, // 40
         maxGenerations: 1000,
         mutationRate: 3
     };
