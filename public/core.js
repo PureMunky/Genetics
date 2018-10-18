@@ -60,7 +60,8 @@ var Utilities = (function () {
         document.body.innerHTML = '';
         document.writeln('<button onclick="BinaryExample.run()">Binary</button>');
         document.writeln('<button onclick="Knapsack.run()">Knapsack</button>');
-        document.writeln('<button onclick="Generator.run()">Generator</button>');
+        document.writeln('<button onclick="Generator.run(true)">Generator</button>');
+        //document.writeln('<button onclick="Generator.run(false)">Generator(Inc)</button>');
     }
 
     return {
@@ -268,6 +269,88 @@ var Genetics = (function (utils) {
     };
 }(Utilities));
 
+// Incremental
+var Incremental = (function (utils) {
+    var findFitness;
+    var interpretSolution;
+    var solutionSize = 0;
+    var bestSolution;
+    var bestFitness = 0;
+
+    function increment(solution) {
+        var i = 0;
+        var carry = true;
+        for(i = solution.length-1; i >= 0 && carry; i--){
+            if(solution[i] === 1){
+                solution[i] = 0;
+                carry = true
+            } else {
+                solution[i] = 1;
+                carry = false;
+            }
+        }
+
+        return (carry ? undefined : solution);
+    }
+
+    // Begins the processing to find a solution.
+    function run() {
+        utils.resetDisplay();
+        document.write('<pre>');
+        var i = 0,
+            start = new Date(),
+            end = new Date();
+        var solution = [];    
+        var found = false;
+
+        for(i=0; i < solutionSize; i++) {
+            solution[i] = 0;
+        }
+
+        for (i = 0; solution !== undefined && !found; i++) {
+            var fit = findFitness(solution);
+            if(fit.value > bestFitness) {
+                bestFitness = fit.value;
+                bestSolution = solution;
+                if(fit.perfect) {
+                    found = true;
+                }
+            }
+
+            solution = increment(solution);
+        }
+
+        end = new Date();
+        document.write('Solution: ');
+        var sol = interpretSolution(bestSolution);
+        if (sol.english) {
+            document.write(sol.english);
+        } else {
+            document.write(sol);
+        }
+        document.write('<br/>');
+        document.write('Array: ' + bestSolution);
+        document.write('<br/>');
+        document.write('Fitness: ' + bestFitness);
+        document.write('<br/>');
+        document.write((end - start) + ' milliseconds');
+        document.write('</pre>');
+
+        return bestSolution;
+    }
+
+    function init(config) {
+        solutionSize = config.solutionSize || 40;
+        findFitness = config.fitness;
+        interpretSolution = config.interpret;
+        return run();
+    }
+
+    return {
+        initialize: init
+    };
+}(Utilities));
+
 // Binary Example
 var BinaryExample = (function (gen, utils) {
 
@@ -339,7 +422,7 @@ var Knapsack = (function (gen, utils) {
     {
         name: 'toothbrush',
         weight: 1,
-        priority: 1 // 50
+        priority:  10 // 50
     },
     {
         name: 'pillow',
@@ -395,9 +478,25 @@ var Knapsack = (function (gen, utils) {
     // weight limit
     var maxWeight = 100;
 
-    // Determine the total weight of the solution.
-    // If the weight is greater than max then sort.
-    function findFitness(solution) {
+    // Uses weight only as a factor for poor fitness.
+    // Priority is the best measure of fitness.
+    function findFitnessBest(solution) {
+        var sol = interpret(solution);
+
+        var fitness = sol.totalPriority;
+
+        if (sol.totalWeight > maxWeight) {
+            fitness = -1 * sol.totalWeight;
+        }
+
+        return {
+            value: fitness,
+            perfect: false
+        };
+    }
+
+    // Includes the weight and priority of the solution as fitness.
+    function findFitnessBetter(solution){
         var sol = interpret(solution);
 
         var fitness = sol.totalWeight;
@@ -406,6 +505,23 @@ var Knapsack = (function (gen, utils) {
             fitness *= -1;
         } else {
             fitness += sol.totalPriority;
+        }
+
+        return {
+            value: fitness,
+            perfect: false
+        };
+    }
+
+    // Uses weight and priority to determine fitness.
+    // Doesn't prioritize non-solutions.
+    function findFitnessBad(solution){
+        var sol = interpret(solution);
+
+        var fitness = sol.totalWeight + sol.totalPriority;
+
+        if (sol.totalWeight > maxWeight) {
+            fitness = 0;
         }
 
         return {
@@ -450,7 +566,7 @@ var Knapsack = (function (gen, utils) {
 
     function run() {
         gen.initialize({
-            fitness: findFitness,
+            fitness: findFitnessBad,
             interpret: interpret,
             solutionSize: items.length, // if we add items to the list we want to automatically adjust the solution size to match.
             maxGenerations: 1000
@@ -463,7 +579,7 @@ var Knapsack = (function (gen, utils) {
 }(Genetics, Utilities));
 
 // Generator Example
-var Generator = (function (gen, utils) {
+var Generator = (function (gen, utils, inc) {
     // Problem: Build a simple function in javascript that is able to perform
     // simple mathematic operations on the passed in parameters.
 
@@ -480,10 +596,11 @@ var Generator = (function (gen, utils) {
         if (testFunc(2, 3, 6) == 0) { cntCorrect++; }
         if (testFunc(5, 7, 10) == 25) { cntCorrect++; }
         if (testFunc(3, 3, 0) == 9) { cntCorrect++; }
+        if (testFunc(37, 362, 55) == 13339) { cntCorrect++; }
 
         return {
-            value: cntCorrect / 4.0,
-            perfect: (cntCorrect == 4)
+            value: cntCorrect / 5.0,
+            perfect: (cntCorrect == 5)
         };
     }
 
@@ -628,14 +745,18 @@ var Generator = (function (gen, utils) {
         mutationRate: 3
     };
 
-    function run() {
-        gen.initialize(config);
+    function run(genetic) {
+        if (genetic) {
+            gen.initialize(config);
+        } else {
+            inc.initialize(config);
+        }
     }
 
     return {
         run: run,
         config: config
     };
-}(Genetics, Utilities));
+}(Genetics, Utilities, Incremental));
 
 Utilities.resetDisplay();
