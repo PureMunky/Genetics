@@ -57,10 +57,10 @@ var Utilities = (function () {
 
     // Builds the buttons on the screen.
     function resetDisplay() {
-        document.body.innerHTML = '';
-        document.writeln('<button onclick="BinaryExample.run()">Binary</button>');
-        document.writeln('<button onclick="Knapsack.run()">Knapsack</button>');
-        document.writeln('<button onclick="Generator.run(true)">Generator</button>');
+        //document.body.innerHTML = '';
+        //document.writeln('<button onclick="BinaryExample.run()">Binary</button>');
+        //document.writeln('<button onclick="Knapsack.run()">Knapsack</button>');
+        //document.writeln('<button onclick="Generator.run(true)">Generator</button>');
         //document.writeln('<button onclick="Generator.run(false)">Generator(Inc)</button>');
     }
 
@@ -89,7 +89,8 @@ var Genetics = (function (utils) {
         maxGenerations = 1000,
         foundSolution = false,
         findFitness,
-        interpretSolution;
+        interpretSolution,
+        startTime;
 
     // Takes the top two solutions and builds a population from them using mating.
     function generatePopulation() {
@@ -201,11 +202,10 @@ var Genetics = (function (utils) {
 
     // Begins the processing to find a solution.
     function run() {
+        var outString = '';
         utils.resetDisplay();
-        document.write('<pre>');
-        var i = 0,
-            start = new Date(),
-            end = new Date();
+        var i = 0;
+        startTime = new Date();
 
         generateInitialPopulation();
         findNewParents();
@@ -216,25 +216,33 @@ var Genetics = (function (utils) {
             findNewParents();
         }
 
-        end = new Date();
-        document.write('Solution: ');
-        var sol = interpretSolution(bestSolution);
-        if (sol.english) {
-            document.write(sol.english);
-        } else {
-            document.write(sol);
-        }
-        document.write('<br/>');
-        document.write('Array: ' + bestSolution);
-        document.write('<br/>');
-        document.write('Fitness: ' + bestFitness);
-        document.write('<br/>');
-        document.write('Found in ' + foundinXGenerations + ' Generations');
-        document.write('<br/>');
-        document.write((end - start) + ' milliseconds');
-        document.write('</pre>');
+        report();
 
         return bestSolution;
+    }
+
+    function report() {
+        var outString = '';
+        var end = new Date();
+        outString += '<pre>';
+        outString += 'Solution:';
+        var sol = interpretSolution(bestSolution);
+        if (sol.english) {
+            outString += sol.english;
+        } else {
+            outString += sol;
+        }
+        outString += '<br/>';
+        outString += 'Array: ' + bestSolution;
+        outString += '<br/>';
+        outString += 'Fitness: ' + bestFitness;
+        outString += '<br/>';
+        outString += 'Found in ' + foundinXGenerations + ' Generations';
+        outString += '<br/>';
+        outString += (end - startTime) + ' milliseconds';
+        outString += '</pre>';
+
+        document.getElementById('output').innerHTML = outString;
     }
 
     // Resets all values back to default and sets passed configuration.
