@@ -55,20 +55,10 @@ var Utilities = (function () {
         }
     }
 
-    // Builds the buttons on the screen.
-    function resetDisplay() {
-        //document.body.innerHTML = '';
-        //document.writeln('<button onclick="BinaryExample.run()">Binary</button>');
-        //document.writeln('<button onclick="Knapsack.run()">Knapsack</button>');
-        //document.writeln('<button onclick="Generator.run(true)">Generator</button>');
-        //document.writeln('<button onclick="Generator.run(false)">Generator(Inc)</button>');
-    }
-
     return {
         getBitLength: getBitLength,
         toDecimal: toDecimal,
-        readArray: readArray,
-        resetDisplay: resetDisplay
+        readArray: readArray
     };
 })();
 
@@ -200,22 +190,23 @@ var Genetics = (function (utils) {
         return solution;
     }
 
-    // Begins the processing to find a solution.
-    function run() {
-        var outString = '';
-        utils.resetDisplay();
+    function performGenerationCycle(){
         var i = 0;
-        startTime = new Date();
-
-        generateInitialPopulation();
-        findNewParents();
-
         for (i = 0; i < maxGenerations && !foundSolution; i++) {
             currentGeneration++;
             generatePopulation();
             findNewParents();
         }
+    }
 
+    // Begins the processing to find a solution.
+    function run() {
+        var outString = '';
+        startTime = new Date();
+
+        generateInitialPopulation();
+        findNewParents();
+        performGenerationCycle();
         report();
 
         return bestSolution;
@@ -753,5 +744,3 @@ var Generator = (function (gen, utils, inc) {
         config: config
     };
 }(Genetics, Utilities, Incremental));
-
-Utilities.resetDisplay();
