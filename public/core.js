@@ -109,10 +109,10 @@ var Genetics = (function (utils) {
         var offspring = [];
         var bitValue = 0;
         var split = Math.round((Math.random() * 1000) % solutionSize);
-        
+
         // EXAMPLE: Not randomizing the split.
         //split = (solutionSize / 2);
-        
+
         for (i = 0; i < solutionSize; i++) {
             bitValue = 0;
 
@@ -288,8 +288,8 @@ var Incremental = (function (utils) {
     function increment(solution) {
         var i = 0;
         var carry = true;
-        for(i = solution.length-1; i >= 0 && carry; i--){
-            if(solution[i] === 1){
+        for (i = solution.length - 1; i >= 0 && carry; i--) {
+            if (solution[i] === 1) {
                 solution[i] = 0;
                 carry = true
             } else {
@@ -308,19 +308,19 @@ var Incremental = (function (utils) {
         var i = 0,
             start = new Date(),
             end = new Date();
-        var solution = [];    
+        var solution = [];
         var found = false;
 
-        for(i=0; i < solutionSize; i++) {
+        for (i = 0; i < solutionSize; i++) {
             solution[i] = 0;
         }
 
         for (i = 0; solution !== undefined && !found; i++) {
             var fit = findFitness(solution);
-            if(fit.value > bestFitness) {
+            if (fit.value > bestFitness) {
                 bestFitness = fit.value;
                 bestSolution = solution;
-                if(fit.perfect) {
+                if (fit.perfect) {
                     found = true;
                 }
             }
@@ -430,7 +430,7 @@ var Knapsack = (function (gen, utils) {
     {
         name: 'toothbrush',
         weight: 1,
-        priority:  10 // 50
+        priority: 10 // 50
     },
     {
         name: 'pillow',
@@ -504,7 +504,7 @@ var Knapsack = (function (gen, utils) {
     }
 
     // Includes the weight and priority of the solution as fitness.
-    function findFitnessBetter(solution){
+    function findFitnessBetter(solution) {
         var sol = interpret(solution);
 
         var fitness = sol.totalWeight;
@@ -523,7 +523,7 @@ var Knapsack = (function (gen, utils) {
 
     // Uses weight and priority to determine fitness.
     // Doesn't prioritize non-solutions.
-    function findFitnessBad(solution){
+    function findFitnessBad(solution) {
         var sol = interpret(solution);
 
         var fitness = sol.totalWeight + sol.totalPriority;
@@ -594,7 +594,6 @@ var Generator = (function (gen, utils, inc) {
     // Uses the function to generate a javascript function and calls it using
     // known combinations of numbers with known results.
     function findFitness(solution) {
-
         eval(interpretSolution(solution));
 
         var cntCorrect = 0;
@@ -614,12 +613,7 @@ var Generator = (function (gen, utils, inc) {
 
     // Given an array of bits it will generate a simple javascript function.
     function interpretSolution(solution) {
-        var keys = [
-            'createFunction',
-            'callFunction',
-            'createVariable',
-            'returnVariable'
-        ],
+        var keys = ['createFunction', 'callFunction', 'createVariable', 'returnVariable'],
             names = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'],
             structure = {
                 keys: ['createVariable'],
@@ -630,119 +624,112 @@ var Generator = (function (gen, utils, inc) {
             },
             currStructure = structure,
             testString = 'function testFunc(',
-            reader = utils.readArray(solution);
+            reader = utils.readArray(solution),
+            paramCount = 3,
+            i = 0;
 
-        var paramCount = 3;
-        var i = 0;
+        function setup() {
+            for (i = 0; i < paramCount; i++) {
+                if (i != 0) { testString += ','; }
+                testString += names[i];
+                currStructure.variables.push(names[i]);
+            }
+            currStructure.currentName = paramCount;
+            testString += '){';
 
-        for (i = 0; i < paramCount; i++) {
-            if (i != 0) { testString += ','; }
-            testString += names[i];
-            currStructure.variables.push(names[i]);
+            currStructure.keys.push('addVariables');
+            currStructure.keys.push('subtractVariables');
+            currStructure.keys.push('multiplyVariables');
+            currStructure.keys.push('divideVariables');
         }
-        currStructure.currentName = paramCount;
-        testString += '){';
 
-        currStructure.keys.push('addVariables');
-        currStructure.keys.push('subtractVariables');
-        currStructure.keys.push('multiplyVariables');
-        currStructure.keys.push('divideVariables');
+        function buildFunction() {
+            while (!reader.endOfArray()) {
+                getNextAction();
+            }
 
-        while (!reader.endOfArray()) {
-            var action = currStructure.keys[utils.toDecimal(reader.next(utils.getBitLength(currStructure.keys.length)))];
+            while (currStructure.parentFunction) {
+                testString += 'return undefined;}'
+                currStructure = currStructure.parentFunction;
+            }
+
+            testString += 'return ' + currStructure.variables[currStructure.variables.length - 1] + ';}';
+            
+            return testString;
+        }
+
+        function getAVariable() {
+            return getNextFromArray(currStructure.variables);
+        }
+
+        function getNextFromArray(arr) {
+            return arr[utils.toDecimal(reader.next(utils.getBitLength(arr.length)))];
+        }
+
+        function getNextAction() {
+            var action = getNextFromArray(currStructure.keys);
 
             if (action == 'createFunction') {
-                testString += 'function ' + names[currStructure.currentName] + '() {';
-
-                currStructure.functions.push({
-                    keys: ['createFunction', 'createVariable', 'returnVariable'],
-                    name: names[currStructure.currentName],
-                    variables: [],
-                    functions: [],
-                    currentName: 0,
-                    parentFunction: currStructure
-                });
-
-                currStructure.currentName++;
-
-                currStructure = currStructure.functions[currStructure.functions.length - 1];
-
+                createFunction();
             } else if (action == 'createVariable') {
-
-                testString += 'var ' + names[currStructure.currentName] + ' = ' + utils.toDecimal(reader.next(3)) + ';';
-
-                currStructure.variables.push(names[currStructure.currentName]);
-
-                currStructure.currentName++;
+                createVariable();
             } else if (action == 'returnVariable') {
-                var varName = currStructure.variables[utils.toDecimal(reader.next(utils.getBitLength(currStructure.variables.length)))];
-                testString += 'return ' + (varName ? varName : 'void') + ';}';
-
-                currStructure = currStructure.parentFunction;
+                returnVariable();
             } else if (action == 'callFunction') {
-                var funcName = currStructure.functions[utils.toDecimal(reader.next(utils.getBitLength(currStructure.functions.length)))];
-                testString += (funcName ? funcName + '();' : '');
+                callFunction();
             } else if (action == 'addVariables') {
-                testString += 'var '
-                    + names[currStructure.currentName]
-                    + ' = '
-                    + currStructure.variables[utils.toDecimal(reader.next(utils.getBitLength(currStructure.variables.length)))]
-                    + ' + '
-                    + currStructure.variables[utils.toDecimal(reader.next(utils.getBitLength(currStructure.variables.length)))]
-                    + ';';
-
-                currStructure.variables.push(names[currStructure.currentName]);
-
-                currStructure.currentName++;
+                variableMath('+');
             } else if (action == 'subtractVariables') {
-                testString += 'var '
-                    + names[currStructure.currentName]
-                    + ' = '
-                    + currStructure.variables[utils.toDecimal(reader.next(utils.getBitLength(currStructure.variables.length)))]
-                    + ' - '
-                    + currStructure.variables[utils.toDecimal(reader.next(utils.getBitLength(currStructure.variables.length)))]
-                    + ';';
-
-                currStructure.variables.push(names[currStructure.currentName]);
-
-                currStructure.currentName++;
+                variableMath('-');
             } else if (action == 'multiplyVariables') {
-                testString += 'var '
-                    + names[currStructure.currentName]
-                    + ' = '
-                    + currStructure.variables[utils.toDecimal(reader.next(utils.getBitLength(currStructure.variables.length)))]
-                    + ' * '
-                    + currStructure.variables[utils.toDecimal(reader.next(utils.getBitLength(currStructure.variables.length)))]
-                    + ';';
-
-                currStructure.variables.push(names[currStructure.currentName]);
-
-                currStructure.currentName++;
-
+                variableMath('*');
             } else if (action == 'divideVariables') {
-                testString += 'var '
-                    + names[currStructure.currentName]
-                    + ' = '
-                    + currStructure.variables[utils.toDecimal(reader.next(utils.getBitLength(currStructure.variables.length)))]
-                    + ' / '
-                    + currStructure.variables[utils.toDecimal(reader.next(utils.getBitLength(currStructure.variables.length)))]
-                    + ';';
-
-                currStructure.variables.push(names[currStructure.currentName]);
-
-                currStructure.currentName++;
-
+                variableMath('/');
             }
         }
 
-        while (currStructure.parentFunction) {
-            testString += 'return void;}'
+        function createFunction() {
+            testString += 'function ' + names[currStructure.currentName] + '() {';
+
+            currStructure.functions.push({
+                keys: ['createFunction', 'createVariable', 'returnVariable'],
+                name: names[currStructure.currentName],
+                variables: [],
+                functions: [],
+                currentName: 0,
+                parentFunction: currStructure
+            });
+
+            currStructure.currentName++;
+
+            currStructure = currStructure.functions[currStructure.functions.length - 1];
+        }
+
+        function createVariable() {
+            testString += 'var ' + names[currStructure.currentName] + ' = ' + utils.toDecimal(reader.next(3)) + ';';
+            currStructure.variables.push(names[currStructure.currentName]);
+            currStructure.currentName++;
+        }
+
+        function returnVariable() {
+            var varName = getAVariable();
+            testString += 'return ' + (varName ? varName : 'undefined') + ';}';
             currStructure = currStructure.parentFunction;
         }
 
-        testString += 'return ' + currStructure.variables[currStructure.variables.length - 1] + ';}';
+        function callFunction() {
+            var funcName = currStructure.functions[utils.toDecimal(reader.next(utils.getBitLength(currStructure.functions.length)))];
+            testString += (funcName ? funcName + '();' : '');
+        }
 
-        return testString;
+        function variableMath(operator) {
+            testString += 'var ' + names[currStructure.currentName] + ' = ' + getAVariable() + ' ' + operator + ' ' + getAVariable() + ';';
+            currStructure.variables.push(names[currStructure.currentName]);
+            currStructure.currentName++;
+        }
+
+        setup();
+        return buildFunction();
     }
 
     var config = {
