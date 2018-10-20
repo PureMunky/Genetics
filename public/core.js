@@ -190,7 +190,7 @@ var Genetics = (function (utils) {
         return solution;
     }
 
-    function performGenerationCycle(){
+    function performGenerationCycle() {
         var i = 0;
         for (i = 0; i < maxGenerations && !foundSolution; i++) {
             currentGeneration++;
@@ -645,7 +645,7 @@ var Generator = (function (gen, utils, inc) {
             }
 
             testString += 'return ' + currStructure.variables[currStructure.variables.length - 1] + ';}';
-            
+
             return testString;
         }
 
