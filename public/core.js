@@ -80,7 +80,9 @@ var Genetics = (function (utils) {
         foundSolution = false,
         findFitness,
         interpretSolution,
-        startTime;
+        startTime,
+        runTimer,
+        reportProgress = true;
 
     // Takes the top two solutions and builds a population from them using mating.
     function generatePopulation() {
@@ -191,11 +193,17 @@ var Genetics = (function (utils) {
     }
 
     function performGenerationCycle() {
-        var i = 0;
-        for (i = 0; i < maxGenerations && !foundSolution; i++) {
-            currentGeneration++;
-            generatePopulation();
-            findNewParents();
+        currentGeneration++;
+        generatePopulation();
+        findNewParents();
+
+        if(reportProgress) {
+            report();
+            if(currentGeneration < maxGenerations && !foundSolution) {
+                runTimer = setTimeout(performGenerationCycle, 0);
+            } else {
+                report();
+            }
         }
     }
 
@@ -206,15 +214,21 @@ var Genetics = (function (utils) {
 
         generateInitialPopulation();
         findNewParents();
-        performGenerationCycle();
-        report();
-
-        return bestSolution;
+        if(reportProgress) {
+            performGenerationCycle();            
+        } else {
+            while(currentGeneration < maxGenerations && !foundSolution) {
+                performGenerationCycle();
+            }
+            report();
+        }
     }
 
     function report() {
         var outString = '';
         var end = new Date();
+        var ms = (end - startTime);
+
         outString += '<pre>';
         outString += 'Solution:';
         var sol = interpretSolution(bestSolution);
@@ -223,6 +237,7 @@ var Genetics = (function (utils) {
         } else {
             outString += sol;
         }
+
         outString += '<br/>';
         outString += 'Array: ' + bestSolution;
         outString += '<br/>';
@@ -230,7 +245,10 @@ var Genetics = (function (utils) {
         outString += '<br/>';
         outString += 'Found in ' + foundinXGenerations + ' Generations';
         outString += '<br/>';
-        outString += (end - startTime) + ' milliseconds';
+        outString += 'Current Generation: ' + currentGeneration;
+        outString += '<br/>';
+        outString += 'Time: ' + ms + ' milliseconds';
+        outString += '<br/>Gen/Sec: ' + Math.round((currentGeneration / ms) * 1000);
         outString += '</pre>';
 
         document.getElementById('output').innerHTML = outString;
@@ -259,6 +277,9 @@ var Genetics = (function (utils) {
         mutationRate = config.mutationRate || 1;
         maxGenerations = config.maxGenerations || 100;
         foundSolution = false;
+        reportProgress = document.getElementById('chkReportProgress').checked;
+        clearTimeout(runTimer);
+        document.getElementById('output').innerHTML = '';
 
         return run();
     }
@@ -584,7 +605,7 @@ var Generator = (function (gen, utils, inc) {
 
     // Uses the function to generate a javascript function and calls it using
     // known combinations of numbers with known results.
-    function findFitness(solution) {
+    function findFitnessBad(solution) {
         eval(interpretSolution(solution));
 
         var cntCorrect = 0;
@@ -602,6 +623,24 @@ var Generator = (function (gen, utils, inc) {
         };
     }
 
+    function findFitnessBetter(solution) {
+        eval(interpretSolution(solution));
+
+        var cntCorrect = 0;
+
+        // A * B - C
+        if (testFunc(2, 2, 0) == 4) { cntCorrect++; }
+        if (testFunc(2, 0, 6) == -6) { cntCorrect++; }
+        if (testFunc(0, 7, 10) == -10) { cntCorrect++; }
+        if (testFunc(3, 0, 0) == 0) { cntCorrect++; }
+        if (testFunc(0, 0, 55) == -55) { cntCorrect++; }
+        if (testFunc(0, 0, 0) == 0) { cntCorrect++; }
+
+        return {
+            value: cntCorrect / 6.0,
+            perfect: (cntCorrect == 6)
+        };
+    }
     // Given an array of bits it will generate a simple javascript function.
     function interpretSolution(solution) {
         var keys = ['createFunction', 'callFunction', 'createVariable', 'returnVariable'],
@@ -724,13 +763,12 @@ var Generator = (function (gen, utils, inc) {
     }
 
     var config = {
-        fitness: findFitness,
+        fitness: findFitnessBad,
         interpret: interpretSolution,
         solutionSize: 25, // 40
         maxGenerations: 1000,
         mutationRate: 3
     };
-
     function run(genetic) {
         if (genetic) {
             gen.initialize(config);
