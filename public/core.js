@@ -82,6 +82,7 @@ var Genetics = (function (utils) {
         interpretSolution,
         startTime,
         runTimer,
+        running = false,
         reportProgress = true;
 
     // Takes the top two solutions and builds a population from them using mating.
@@ -202,6 +203,7 @@ var Genetics = (function (utils) {
             if(currentGeneration < maxGenerations && !foundSolution) {
                 runTimer = setTimeout(performGenerationCycle, 0);
             } else {
+                running = false;
                 report();
             }
         }
@@ -211,6 +213,7 @@ var Genetics = (function (utils) {
     function run() {
         var outString = '';
         startTime = new Date();
+        running = true;
 
         generateInitialPopulation();
         findNewParents();
@@ -220,38 +223,43 @@ var Genetics = (function (utils) {
             while(currentGeneration < maxGenerations && !foundSolution) {
                 performGenerationCycle();
             }
+            running = false;
             report();
         }
     }
 
     function report() {
-        var outString = '';
         var end = new Date();
         var ms = (end - startTime);
+        var outRunning = document.getElementById('outRunning');
+        var outSolution = document.getElementById('outSolution');
+        var outArray = document.getElementById('outArray');
+        var outFitness = document.getElementById('outFitness');
+        var outGenerionFound = document.getElementById('outGenerionFound');
+        var outCurrentGeneration = document.getElementById('outCurrentGeneration');
+        var outTime = document.getElementById('outTime');
+        var outGenPerSec = document.getElementById('outGenPerSec');
 
-        outString += '<pre>';
-        outString += 'Solution:';
         var sol = interpretSolution(bestSolution);
         if (sol.english) {
-            outString += sol.english;
+            outSolution.innerHTML = sol.english;
         } else {
-            outString += sol;
+            outSolution.innerHTML = sol;
         }
 
-        outString += '<br/>';
-        outString += 'Array: ' + bestSolution;
-        outString += '<br/>';
-        outString += 'Fitness: ' + bestFitness;
-        outString += '<br/>';
-        outString += 'Found in ' + foundinXGenerations + ' Generations';
-        outString += '<br/>';
-        outString += 'Current Generation: ' + currentGeneration;
-        outString += '<br/>';
-        outString += 'Time: ' + ms + ' milliseconds';
-        outString += '<br/>Gen/Sec: ' + Math.round((currentGeneration / ms) * 1000);
-        outString += '</pre>';
-
-        document.getElementById('output').innerHTML = outString;
+        if(running) {
+            outRunning.className = 'running';
+            outRunning.innerHTML = 'Running'; 
+        } else {
+            outRunning.className = 'stopped';
+            outRunning.innerHTML = 'Stopped';
+        }
+        outArray.innerHTML = bestSolution;
+        outFitness.innerHTML = bestFitness;
+        outGenerionFound.innerHTML = foundinXGenerations;
+        outCurrentGeneration.innerHTML = currentGeneration;
+        outTime.innerHTML = ms + ' milliseconds';
+        outGenPerSec.innerHTML = Math.round((currentGeneration / ms) * 1000);
     }
 
     // Resets all values back to default and sets passed configuration.
@@ -279,7 +287,6 @@ var Genetics = (function (utils) {
         foundSolution = false;
         reportProgress = document.getElementById('chkReportProgress').checked;
         clearTimeout(runTimer);
-        document.getElementById('output').innerHTML = '';
 
         return run();
     }
@@ -641,6 +648,7 @@ var Generator = (function (gen, utils, inc) {
             perfect: (cntCorrect == 6)
         };
     }
+    
     // Given an array of bits it will generate a simple javascript function.
     function interpretSolution(solution) {
         var keys = ['createFunction', 'callFunction', 'createVariable', 'returnVariable'],

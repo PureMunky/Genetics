@@ -1,0 +1,33 @@
+body {
+    font-family: sans-serif;
+    margin: 0px;
+}
+
+div {
+    padding: 5px;
+}
+
+div > div {
+    font-weight: bold;
+}
+
+div > div > span {
+    font-weight: normal;
+}
+
+#buttons {
+    background-color: #333333;
+    color: #CCCCCC;
+}
+
+#outRunning {
+    font-weight: bold;
+}
+
+#outRunning.running {
+    color: #009900;
+}
+
+#outRunning.stopped {
+    color: #990000;
+}

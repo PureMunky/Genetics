@@ -2,7 +2,8 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 
 <head>
-    <title></title>
+    <title>GA Examples</title>
+    <link rel="stylesheet" href="main.css"/>
 </head>
 
 <body>
@@ -10,12 +11,17 @@
         <button onclick="BinaryExample.run()">Binary</button>
         <button onclick="Knapsack.run()">Knapsack</button>
         <button onclick="Generator.run(true)">Generator</button>
-    </div>
-    <div>
         <input type="checkbox" id="chkReportProgress" />Report Progress
     </div>
     <div id="output">
-
+        <div>Status: <span id="outRunning"></span></div>
+        <div>Solution: <span id="outSolution"> </span></div>
+        <div>Array: <span id="outArray"> </span></div>
+        <div>Fitness: <span id="outFitness"> </span></div>
+        <div>Generations: <span id="outGenerionFound"> </span></div>
+        <div>Current Generation: <span id="outCurrentGeneration"> </span></div>
+        <div>Time: <span id="outTime"> </span></div>
+        <div>Gen/Sec: <span id="outGenPerSec"> </span></div>
     </div>
 </body>
 <script src="core.js"></script>
