@@ -55,20 +55,10 @@ var Utilities = (function () {
         }
     }
 
-    // Builds the buttons on the screen.
-    function resetDisplay() {
-        document.body.innerHTML = '';
-        document.writeln('<button onclick="BinaryExample.run()">Binary</button>');
-        document.writeln('<button onclick="Knapsack.run()">Knapsack</button>');
-        document.writeln('<button onclick="Generator.run(true)">Generator</button>');
-        //document.writeln('<button onclick="Generator.run(false)">Generator(Inc)</button>');
-    }
-
     return {
         getBitLength: getBitLength,
         toDecimal: toDecimal,
-        readArray: readArray,
-        resetDisplay: resetDisplay
+        readArray: readArray
     };
 })();
 
@@ -89,7 +79,11 @@ var Genetics = (function (utils) {
         maxGenerations = 1000,
         foundSolution = false,
         findFitness,
-        interpretSolution;
+        interpretSolution,
+        startTime,
+        runTimer,
+        running = false,
+        reportProgress = true;
 
     // Takes the top two solutions and builds a population from them using mating.
     function generatePopulation() {
@@ -108,10 +102,10 @@ var Genetics = (function (utils) {
         var offspring = [];
         var bitValue = 0;
         var split = Math.round((Math.random() * 1000) % solutionSize);
-        
+
         // EXAMPLE: Not randomizing the split.
         //split = (solutionSize / 2);
-        
+
         for (i = 0; i < solutionSize; i++) {
             bitValue = 0;
 
@@ -199,42 +193,73 @@ var Genetics = (function (utils) {
         return solution;
     }
 
+    function performGenerationCycle() {
+        currentGeneration++;
+        generatePopulation();
+        findNewParents();
+
+        if(reportProgress) {
+            report();
+            if(currentGeneration < maxGenerations && !foundSolution) {
+                runTimer = setTimeout(performGenerationCycle, 0);
+            } else {
+                running = false;
+                report();
+            }
+        }
+    }
+
     // Begins the processing to find a solution.
     function run() {
-        utils.resetDisplay();
-        document.write('<pre>');
-        var i = 0,
-            start = new Date(),
-            end = new Date();
+        var outString = '';
+        startTime = new Date();
+        running = true;
 
         generateInitialPopulation();
         findNewParents();
-
-        for (i = 0; i < maxGenerations && !foundSolution; i++) {
-            currentGeneration++;
-            generatePopulation();
-            findNewParents();
+        if(reportProgress) {
+            performGenerationCycle();            
+        } else {
+            while(currentGeneration < maxGenerations && !foundSolution) {
+                performGenerationCycle();
+            }
+            running = false;
+            report();
         }
+    }
 
-        end = new Date();
-        document.write('Solution: ');
+    function report() {
+        var end = new Date();
+        var ms = (end - startTime);
+        var outRunning = document.getElementById('outRunning');
+        var outSolution = document.getElementById('outSolution');
+        var outArray = document.getElementById('outArray');
+        var outFitness = document.getElementById('outFitness');
+        var outGenerionFound = document.getElementById('outGenerionFound');
+        var outCurrentGeneration = document.getElementById('outCurrentGeneration');
+        var outTime = document.getElementById('outTime');
+        var outGenPerSec = document.getElementById('outGenPerSec');
+
         var sol = interpretSolution(bestSolution);
         if (sol.english) {
-            document.write(sol.english);
+            outSolution.innerHTML = sol.english;
         } else {
-            document.write(sol);
+            outSolution.innerHTML = sol;
         }
-        document.write('<br/>');
-        document.write('Array: ' + bestSolution);
-        document.write('<br/>');
-        document.write('Fitness: ' + bestFitness);
-        document.write('<br/>');
-        document.write('Found in ' + foundinXGenerations + ' Generations');
-        document.write('<br/>');
-        document.write((end - start) + ' milliseconds');
-        document.write('</pre>');
 
-        return bestSolution;
+        if(running) {
+            outRunning.className = 'running';
+            outRunning.innerHTML = 'Running'; 
+        } else {
+            outRunning.className = 'stopped';
+            outRunning.innerHTML = 'Stopped';
+        }
+        outArray.innerHTML = bestSolution;
+        outFitness.innerHTML = bestFitness;
+        outGenerionFound.innerHTML = foundinXGenerations;
+        outCurrentGeneration.innerHTML = currentGeneration;
+        outTime.innerHTML = ms + ' milliseconds';
+        outGenPerSec.innerHTML = Math.round((currentGeneration / ms) * 1000);
     }
 
     // Resets all values back to default and sets passed configuration.
@@ -260,6 +285,8 @@ var Genetics = (function (utils) {
         mutationRate = config.mutationRate || 1;
         maxGenerations = config.maxGenerations || 100;
         foundSolution = false;
+        reportProgress = document.getElementById('chkReportProgress').checked;
+        clearTimeout(runTimer);
 
         return run();
     }
@@ -280,8 +307,8 @@ var Incremental = (function (utils) {
     function increment(solution) {
         var i = 0;
         var carry = true;
-        for(i = solution.length-1; i >= 0 && carry; i--){
-            if(solution[i] === 1){
+        for (i = solution.length - 1; i >= 0 && carry; i--) {
+            if (solution[i] === 1) {
                 solution[i] = 0;
                 carry = true
             } else {
@@ -300,19 +327,19 @@ var Incremental = (function (utils) {
         var i = 0,
             start = new Date(),
             end = new Date();
-        var solution = [];    
+        var solution = [];
         var found = false;
 
-        for(i=0; i < solutionSize; i++) {
+        for (i = 0; i < solutionSize; i++) {
             solution[i] = 0;
         }
 
         for (i = 0; solution !== undefined && !found; i++) {
             var fit = findFitness(solution);
-            if(fit.value > bestFitness) {
+            if (fit.value > bestFitness) {
                 bestFitness = fit.value;
                 bestSolution = solution;
-                if(fit.perfect) {
+                if (fit.perfect) {
                     found = true;
                 }
             }
@@ -422,7 +449,7 @@ var Knapsack = (function (gen, utils) {
     {
         name: 'toothbrush',
         weight: 1,
-        priority:  10 // 50
+        priority: 10 // 50
     },
     {
         name: 'pillow',
@@ -496,7 +523,7 @@ var Knapsack = (function (gen, utils) {
     }
 
     // Includes the weight and priority of the solution as fitness.
-    function findFitnessBetter(solution){
+    function findFitnessBetter(solution) {
         var sol = interpret(solution);
 
         var fitness = sol.totalWeight;
@@ -515,7 +542,7 @@ var Knapsack = (function (gen, utils) {
 
     // Uses weight and priority to determine fitness.
     // Doesn't prioritize non-solutions.
-    function findFitnessBad(solution){
+    function findFitnessBad(solution) {
         var sol = interpret(solution);
 
         var fitness = sol.totalWeight + sol.totalPriority;
@@ -585,8 +612,7 @@ var Generator = (function (gen, utils, inc) {
 
     // Uses the function to generate a javascript function and calls it using
     // known combinations of numbers with known results.
-    function findFitness(solution) {
-
+    function findFitnessBad(solution) {
         eval(interpretSolution(solution));
 
         var cntCorrect = 0;
@@ -604,14 +630,28 @@ var Generator = (function (gen, utils, inc) {
         };
     }
 
+    function findFitnessBetter(solution) {
+        eval(interpretSolution(solution));
+
+        var cntCorrect = 0;
+
+        // A * B - C
+        if (testFunc(2, 2, 0) == 4) { cntCorrect++; }
+        if (testFunc(2, 0, 6) == -6) { cntCorrect++; }
+        if (testFunc(0, 7, 10) == -10) { cntCorrect++; }
+        if (testFunc(3, 0, 0) == 0) { cntCorrect++; }
+        if (testFunc(0, 0, 55) == -55) { cntCorrect++; }
+        if (testFunc(0, 0, 0) == 0) { cntCorrect++; }
+
+        return {
+            value: cntCorrect / 6.0,
+            perfect: (cntCorrect == 6)
+        };
+    }
+    
     // Given an array of bits it will generate a simple javascript function.
     function interpretSolution(solution) {
-        var keys = [
-            'createFunction',
-            'callFunction',
-            'createVariable',
-            'returnVariable'
-        ],
+        var keys = ['createFunction', 'callFunction', 'createVariable', 'returnVariable'],
             names = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'],
             structure = {
                 keys: ['createVariable'],
@@ -622,129 +662,121 @@ var Generator = (function (gen, utils, inc) {
             },
             currStructure = structure,
             testString = 'function testFunc(',
-            reader = utils.readArray(solution);
+            reader = utils.readArray(solution),
+            paramCount = 3,
+            i = 0;
 
-        var paramCount = 3;
-        var i = 0;
+        function setup() {
+            for (i = 0; i < paramCount; i++) {
+                if (i != 0) { testString += ','; }
+                testString += names[i];
+                currStructure.variables.push(names[i]);
+            }
+            currStructure.currentName = paramCount;
+            testString += '){';
 
-        for (i = 0; i < paramCount; i++) {
-            if (i != 0) { testString += ','; }
-            testString += names[i];
-            currStructure.variables.push(names[i]);
+            currStructure.keys.push('addVariables');
+            currStructure.keys.push('subtractVariables');
+            currStructure.keys.push('multiplyVariables');
+            currStructure.keys.push('divideVariables');
         }
-        currStructure.currentName = paramCount;
-        testString += '){';
 
-        currStructure.keys.push('addVariables');
-        currStructure.keys.push('subtractVariables');
-        currStructure.keys.push('multiplyVariables');
-        currStructure.keys.push('divideVariables');
+        function buildFunction() {
+            while (!reader.endOfArray()) {
+                getNextAction();
+            }
 
-        while (!reader.endOfArray()) {
-            var action = currStructure.keys[utils.toDecimal(reader.next(utils.getBitLength(currStructure.keys.length)))];
+            while (currStructure.parentFunction) {
+                testString += 'return undefined;}'
+                currStructure = currStructure.parentFunction;
+            }
+
+            testString += 'return ' + currStructure.variables[currStructure.variables.length - 1] + ';}';
+
+            return testString;
+        }
+
+        function getAVariable() {
+            return getNextFromArray(currStructure.variables);
+        }
+
+        function getNextFromArray(arr) {
+            return arr[utils.toDecimal(reader.next(utils.getBitLength(arr.length)))];
+        }
+
+        function getNextAction() {
+            var action = getNextFromArray(currStructure.keys);
 
             if (action == 'createFunction') {
-                testString += 'function ' + names[currStructure.currentName] + '() {';
-
-                currStructure.functions.push({
-                    keys: ['createFunction', 'createVariable', 'returnVariable'],
-                    name: names[currStructure.currentName],
-                    variables: [],
-                    functions: [],
-                    currentName: 0,
-                    parentFunction: currStructure
-                });
-
-                currStructure.currentName++;
-
-                currStructure = currStructure.functions[currStructure.functions.length - 1];
-
+                createFunction();
             } else if (action == 'createVariable') {
-
-                testString += 'var ' + names[currStructure.currentName] + ' = ' + utils.toDecimal(reader.next(3)) + ';';
-
-                currStructure.variables.push(names[currStructure.currentName]);
-
-                currStructure.currentName++;
+                createVariable();
             } else if (action == 'returnVariable') {
-                var varName = currStructure.variables[utils.toDecimal(reader.next(utils.getBitLength(currStructure.variables.length)))];
-                testString += 'return ' + (varName ? varName : 'void') + ';}';
-
-                currStructure = currStructure.parentFunction;
+                returnVariable();
             } else if (action == 'callFunction') {
-                var funcName = currStructure.functions[utils.toDecimal(reader.next(utils.getBitLength(currStructure.functions.length)))];
-                testString += (funcName ? funcName + '();' : '');
+                callFunction();
             } else if (action == 'addVariables') {
-                testString += 'var '
-                    + names[currStructure.currentName]
-                    + ' = '
-                    + currStructure.variables[utils.toDecimal(reader.next(utils.getBitLength(currStructure.variables.length)))]
-                    + ' + '
-                    + currStructure.variables[utils.toDecimal(reader.next(utils.getBitLength(currStructure.variables.length)))]
-                    + ';';
-
-                currStructure.variables.push(names[currStructure.currentName]);
-
-                currStructure.currentName++;
+                variableMath('+');
             } else if (action == 'subtractVariables') {
-                testString += 'var '
-                    + names[currStructure.currentName]
-                    + ' = '
-                    + currStructure.variables[utils.toDecimal(reader.next(utils.getBitLength(currStructure.variables.length)))]
-                    + ' - '
-                    + currStructure.variables[utils.toDecimal(reader.next(utils.getBitLength(currStructure.variables.length)))]
-                    + ';';
-
-                currStructure.variables.push(names[currStructure.currentName]);
-
-                currStructure.currentName++;
+                variableMath('-');
             } else if (action == 'multiplyVariables') {
-                testString += 'var '
-                    + names[currStructure.currentName]
-                    + ' = '
-                    + currStructure.variables[utils.toDecimal(reader.next(utils.getBitLength(currStructure.variables.length)))]
-                    + ' * '
-                    + currStructure.variables[utils.toDecimal(reader.next(utils.getBitLength(currStructure.variables.length)))]
-                    + ';';
-
-                currStructure.variables.push(names[currStructure.currentName]);
-
-                currStructure.currentName++;
-
+                variableMath('*');
             } else if (action == 'divideVariables') {
-                testString += 'var '
-                    + names[currStructure.currentName]
-                    + ' = '
-                    + currStructure.variables[utils.toDecimal(reader.next(utils.getBitLength(currStructure.variables.length)))]
-                    + ' / '
-                    + currStructure.variables[utils.toDecimal(reader.next(utils.getBitLength(currStructure.variables.length)))]
-                    + ';';
-
-                currStructure.variables.push(names[currStructure.currentName]);
-
-                currStructure.currentName++;
-
+                variableMath('/');
             }
         }
 
-        while (currStructure.parentFunction) {
-            testString += 'return void;}'
+        function createFunction() {
+            testString += 'function ' + names[currStructure.currentName] + '() {';
+
+            currStructure.functions.push({
+                keys: ['createFunction', 'createVariable', 'returnVariable'],
+                name: names[currStructure.currentName],
+                variables: [],
+                functions: [],
+                currentName: 0,
+                parentFunction: currStructure
+            });
+
+            currStructure.currentName++;
+
+            currStructure = currStructure.functions[currStructure.functions.length - 1];
+        }
+
+        function createVariable() {
+            testString += 'var ' + names[currStructure.currentName] + ' = ' + utils.toDecimal(reader.next(3)) + ';';
+            currStructure.variables.push(names[currStructure.currentName]);
+            currStructure.currentName++;
+        }
+
+        function returnVariable() {
+            var varName = getAVariable();
+            testString += 'return ' + (varName ? varName : 'undefined') + ';}';
             currStructure = currStructure.parentFunction;
         }
 
-        testString += 'return ' + currStructure.variables[currStructure.variables.length - 1] + ';}';
+        function callFunction() {
+            var funcName = currStructure.functions[utils.toDecimal(reader.next(utils.getBitLength(currStructure.functions.length)))];
+            testString += (funcName ? funcName + '();' : '');
+        }
 
-        return testString;
+        function variableMath(operator) {
+            testString += 'var ' + names[currStructure.currentName] + ' = ' + getAVariable() + ' ' + operator + ' ' + getAVariable() + ';';
+            currStructure.variables.push(names[currStructure.currentName]);
+            currStructure.currentName++;
+        }
+
+        setup();
+        return buildFunction();
     }
 
     var config = {
-        fitness: findFitness,
+        fitness: findFitnessBad,
         interpret: interpretSolution,
         solutionSize: 25, // 40
         maxGenerations: 1000,
         mutationRate: 3
     };
-
     function run(genetic) {
         if (genetic) {
             gen.initialize(config);
@@ -758,5 +790,3 @@ var Generator = (function (gen, utils, inc) {
         config: config
     };
 }(Genetics, Utilities, Incremental));
-
-Utilities.resetDisplay();
